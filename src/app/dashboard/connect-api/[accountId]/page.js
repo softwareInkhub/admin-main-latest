@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase'; // Import Firestore database
-import { collection, getDocs, addDoc } from 'firebase/firestore'; // Import Firestore functions
+import { collection, getDocs, query, where, addDoc } from 'firebase/firestore'; // Import Firestore functions
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/solid'; // Import icons
 import { v4 as uuidv4 } from 'uuid'; // Import UUID generator
 import Modal from '@/components/ui/ApiModal'; // Import the Modal component
+import { useParams } from 'next/navigation'; // Use the correct import for App Router
 
 export default function ConnectAPI() {
+  const { accountId } = useParams(); // Get accountId from URL parameters
   const [apis, setApis] = useState([]); // State to hold API data
   const [loading, setLoading] = useState(true); // Loading state
   const [expandedApiId, setExpandedApiId] = useState(null); // State to track which API is expanded
@@ -16,13 +18,16 @@ export default function ConnectAPI() {
   const [createdAtMin, setCreatedAtMin] = useState('');
   const [createdAtMax, setCreatedAtMax] = useState('');
   const [api, setApi] = useState(null); // Store the selected API
+  const [loadingApiId, setLoadingApiId] = useState(null); // State to track which API is currently loading
 
   console.log(apis);
   useEffect(() => {
     const fetchAPIs = async () => {
       setLoading(true); // Set loading state to true
       try {
-        const querySnapshot = await getDocs(collection(db, 'declared_api'));
+        // Fetch APIs based on accountId
+        const declaredApiQuery = query(collection(db, 'declared_api'), where('apiAccountId', '==', accountId));
+        const querySnapshot = await getDocs(declaredApiQuery);
         const apiList = querySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
@@ -35,8 +40,10 @@ export default function ConnectAPI() {
       }
     };
 
-    fetchAPIs(); // Call the fetch function
-  }, []); // Empty dependency array to run only on mount
+    if (accountId) {
+      fetchAPIs(); // Call the fetch function if accountId is available
+    }
+  }, [accountId]); // Ensure accountId is in the dependency array
 
   const toggleExpand = (id) => {
     setExpandedApiId(expandedApiId === id ? null : id); // Toggle the expanded state
@@ -45,10 +52,9 @@ export default function ConnectAPI() {
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms)); // Sleep function
   
   const handleConnect = async (api) => {
+    setLoadingApiId(api.id); // Set the loading state for the specific API
     // Check if params is an array and if created_at_min or created_at_max exist
-    const params = Array.isArray(api.queryParams
-    ) ? api.queryParams
-    : [];
+    const params = Array.isArray(api.queryParams) ? api.queryParams : [];
     if (params.some(param => param.key === 'created_at_min' || param.key === 'created_at_max')) {
         setApi(api); // Store the selected API
         setIsModalOpen(true); // Open the modal to get date values
@@ -56,6 +62,7 @@ export default function ConnectAPI() {
         // Proceed with the connection without date range
         await connectToApi(api);
     }
+    setLoadingApiId(null); // Reset loading state after connection attempt
   };
 
   const connectToApi = async (api) => {
@@ -161,22 +168,24 @@ export default function ConnectAPI() {
   const handleModalSubmit = (dates) => {
     setCreatedAtMin(dates.created_at_min);
     setCreatedAtMax(dates.created_at_max);
-    // Call the connect function with the API details
+    
+    // Call the connect function with the API details immediately after setting the dates
     connectToApi(api); // Pass the selected API object
+    setIsModalOpen(false); // Close the modal after submission
   };
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-white">Connect API</h1>
+    <div className="p-6 bg-gray-800 rounded-lg">
+      <h1 className="text-3xl font-bold text-white mb-4">Connect API</h1>
       {loading ? (
         <div className="text-white">Loading APIs...</div> // Loading message
       ) : (
-        <ul className="mt-4">
+        <ul className="mt-4 space-y-4">
           {apis.length === 0 ? (
             <p className="text-white">No APIs found.</p>
           ) : (
             apis.map(api => (
-              <li key={api.id} className="mb-4 p-4 bg-gray-700 rounded-md relative">
+              <li key={api.id} className="p-4 bg-gray-700 rounded-md shadow-md transition-transform transform hover:scale-[1.01] ">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-blue-400">{api.apiTitle}</h2>
                   <button onClick={() => toggleExpand(api.id)} className="focus:outline-none">
@@ -192,44 +201,51 @@ export default function ConnectAPI() {
                     expandedApiId === api.id ? 'max-h-screen' : 'max-h-0'
                   }`}
                 >
-                  <div className="mt-2">
-                    <p className="text-white">Main URL: {api.mainUrl}</p>
-                    <p className="text-white">Method: {api.method}</p>
-                    <div>
-                      <h3 className="text-white">Headers:</h3>
-                      <ul>
-                        {api.headers && api.headers.length > 0 ? (
-                          api.headers.map((header, index) => (
+                  <div className="mt-2 space-y-2">
+                    {api.mainUrl && <p className="text-white"><strong>Main URL:</strong> {api.mainUrl}</p>}
+                    {api.method && <p className="text-white"><strong>Method:</strong> {api.method}</p>}
+                    {api.callbackUrl && <p className="text-white"><strong>Callback URL:</strong> {api.callbackUrl}</p>}
+                    
+                    {api.headers && api.headers.length > 0 && (
+                      <div>
+                        <h3 className="text-white font-semibold">Headers:</h3>
+                        <ul className="list-disc pl-5">
+                          {api.headers.map((header, index) => (
                             <li key={index} className="text-white">
-                              {header.key}: {header.value}
+                              <strong>{header.key}:</strong> {header.value}
                             </li>
-                          ))
-                        ) : (
-                          <li className="text-white">No headers defined.</li>
-                        )}
-                      </ul>
-                    </div>
-                    <div>
-                      <h3 className="text-white">Query Parameters:</h3>
-                      <ul>
-                        {api.queryParams && api.queryParams.length > 0 ? (
-                          api.queryParams.map((param, index) => (
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {api.queryParams && api.queryParams.length > 0 && (
+                      <div>
+                        <h3 className="text-white font-semibold">Query Parameters:</h3>
+                        <ul className="list-disc pl-5">
+                          {api.queryParams.map((param, index) => (
                             <li key={index} className="text-white">
-                              {param.key}: {param.value}
+                              <strong>{param.key}:</strong> {param.value}
                             </li>
-                          ))
-                        ) : (
-                          <li className="text-white">No query parameters defined.</li>
-                        )}
-                      </ul>
-                    </div>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <button
                   onClick={() => handleConnect(api)}
-                  className="absolute top-4 right-16 p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200"
+                  className="mt-4 w-full p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200 flex items-center justify-center"
+                  disabled={loadingApiId === api.id} // Disable button while connecting
                 >
-                  Connect
+                  {loadingApiId === api.id ? (
+                    <>
+                      <div className="spinner mr-2"></div> {/* Spinner */}
+                      Connecting...
+                    </>
+                  ) : (
+                    'Connect'
+                  )}
                 </button>
               </li>
             ))
@@ -243,7 +259,7 @@ export default function ConnectAPI() {
             <h2 className="text-lg font-semibold text-white">API Response:</h2>
             <button
               onClick={clearResponse}
-              className="ml-4 p-1 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-200"
+              className="ml-4 p-1  bg-red-600  text-white rounded-md hover:bg-red-700 transition duration-200"
             >
               Clear Response
             </button>

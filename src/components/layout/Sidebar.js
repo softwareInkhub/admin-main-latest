@@ -66,7 +66,7 @@ export default function Sidebar() {
         },
         {
           name: 'Connect API',
-          href: '/dashboard/connect-api',
+          href: '/dashboard/api-names',
           icon: CheckCircleIcon,
           role: 'admin'
         }

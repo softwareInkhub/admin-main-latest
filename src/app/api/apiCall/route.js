@@ -68,13 +68,30 @@ export async function POST(request) {
         console.log('Received message:', data.message);
         allData.push(data.message); // Optionally, you can push the message to allData
       } else if (data.orders && Array.isArray(data.orders)) {
-        // Process orders
-        const orders = data.orders.map(order => ({
-          id: order.id,
-          createdAt: order.created_at,
-          total: order.total_price,
-          // Add other fields as needed
-        }));
+        let orders = data.orders; // Initialize orders with the current page's orders
+        let nextOrderPageInfo = data.nextPageInfo; // Assuming the API provides nextPageInfo for orders
+
+        // Fetch all pages of orders if pagination is supported
+        while (nextOrderPageInfo) {
+          const orderFetchUrl = `${url}?page_info=${nextOrderPageInfo}`; // Construct the URL for the next page
+          const orderResponse = await fetch(orderFetchUrl, {
+            method: method,
+            headers: {
+              'Content-Type': 'application/json',
+              ...validHeaders,
+            },
+          });
+
+          if (!orderResponse.ok) {
+            const errorText = await orderResponse.text();
+            console.error('Error fetching orders:', errorText);
+            throw new Error(`HTTP error! status: ${orderResponse.status}, details: ${errorText}`);
+          }
+
+          const orderData = await orderResponse.json();
+          orders = [...orders, ...orderData.orders]; // Append new orders to the existing array
+          nextOrderPageInfo = orderData.nextPageInfo; // Update nextOrderPageInfo for the next iteration
+        }
 
         // Ensure all orders are processed without limit
         allData = [...allData, ...orders];
