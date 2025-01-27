@@ -66,6 +66,14 @@ const ApiAccountsPage = () => {
                                 <div className="text-gray-400">No declared APIs</div>
                             )}
                         </div>
+                        
+                        {/* View APIs Button */}
+                        <Link 
+                            href={`/dashboard/connect-api/${account.id}`} 
+                            className="mt-4 inline-flex items-center justify-center w-full bg-blue-700 text-white font-semibold rounded-lg py-2 hover:bg-blue-800 transition-colors"
+                        >
+                            View APIs
+                        </Link>
                     </div>
                 ))}
             </div>

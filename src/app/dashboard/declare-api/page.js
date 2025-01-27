@@ -26,6 +26,8 @@ export default function DeclareAPI() {
   const [apiId, setApiId] = useState('');
   const [apiAccountId, setApiAccountId] = useState('');
 
+  const [callbackUrl, setCallbackUrl] = useState('');
+
   useEffect(() => {
     const fetchApiData = async () => {
       try {
@@ -161,6 +163,7 @@ export default function DeclareAPI() {
       queryParams,
       headers,
       mainUrl,
+      callbackUrl,
       uuid: docId,
       apiNameId, // Store the API Name ID
       apiAccountId, // Store the API Account ID
@@ -179,6 +182,9 @@ export default function DeclareAPI() {
       // Reset form fields
       setApiName('');
       setApiUrl('');
+      setApiTitle('');
+      setApiAccount('');
+      setCallbackUrl('');
       setMethod('GET');
       setVariables([{ key: '', value: '' }]);
       setQueryParams([{ key: '', value: '' }]);
@@ -405,6 +411,15 @@ export default function DeclareAPI() {
               )}
             </div>
           ))}
+        </div>
+        <div>
+          <label className="block text-gray-300">Callback URL:</label>
+          <input
+            type="text"
+            value={callbackUrl}
+            onChange={(e) => setCallbackUrl(e.target.value)}
+            className="mt-1 p-3 w-full rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
         <button
           type="button"

@@ -134,14 +134,14 @@ const ApiDashboard = () => {
                             <div className="bg-blue-600 rounded-full p-2">
                                 <ArrowUpIcon className="h-4 w-4 text-white" />
                             </div>
-                            <h2 className="text-xl font-bold text-white ml-3">{apiName.apiName}</h2>
+                            <h2 className="text-xl font-bold bg text-white ml-3">{apiName.apiName}</h2>
                         </div>
                         
                         <h3 className="text-lg font-semibold text-gray-300 mb-2">Accounts</h3>
                         
                         <ul className="text-gray-300 mb-4">
                             {apiName.accounts.map((account) => (
-                                <li key={account.id} className="mb-2">
+                                <li key={account.id} className="mb-2 bg-slate-600 p-2 rounded-md">
                                     {account.apiAccountName}
                                 </li>
                             ))}
