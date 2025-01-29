@@ -17,8 +17,10 @@ import {
   Cog6ToothIcon,
   ChartBarIcon,
   ClipboardDocumentListIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
+  CogIcon,
+  ChartPieIcon,
+  ClipboardIcon,
+  PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 
@@ -27,15 +29,6 @@ export default function Sidebar() {
   const { user } = useAuth();
   const { unreadCount } = useNotifications();
   const userRole = user?.role || 'user';
-
-  const [openGroups, setOpenGroups] = useState({});
-
-  const toggleGroup = (title) => {
-    setOpenGroups((prev) => ({
-      ...prev,
-      [title]: !prev[title],
-    }));
-  };
 
   const navigation = [
     {
@@ -50,24 +43,24 @@ export default function Sidebar() {
       ]
     },
     {
-      title: "API Connecter",
+      title: "API Manager",
       items: [
         {
-          name: 'Dashboard',
-          href: '/dashboard/api-dashboard',
-          icon: HomeIcon,
-          role: 'admin'
-        },
-        {
-          name: 'Declare API',
-          href: '/dashboard/declare-api',
+          name: 'API',
+          href: '/dashboard/api',
           icon: UserPlusIcon,
           role: 'admin'
         },
         {
-          name: 'Connect API',
-          href: '/dashboard/api-names',
+          name: 'Declare Api',
+          href: '/dashboard/declare-api',
           icon: CheckCircleIcon,
+          role: 'admin'
+        },
+        {
+          name: 'API Method',
+          href: '/dashboard/api-names',
+          icon: ClipboardIcon,
           role: 'admin'
         }
       ]
@@ -84,7 +77,7 @@ export default function Sidebar() {
         {
           name: 'Pinterest',
           href: '/dashboard/job-manager/pinterest',
-          icon: DocumentTextIcon,
+          icon: PencilSquareIcon,
           role: 'admin'
         }
       ]
@@ -95,6 +88,17 @@ export default function Sidebar() {
         {
           name: 'Dashboard',
           href: '/dashboard/job-manager/pinterest/dashboard',
+          icon: ChartBarIcon,
+          role: 'admin'
+        }
+      ]
+    },
+    {
+      title: "DESIGN",
+      items: [
+        {
+          name: 'Design Library',
+          href: '/dashboard/design-library',
           icon: DocumentTextIcon,
           role: 'admin'
         }
@@ -112,7 +116,7 @@ export default function Sidebar() {
         {
           name: 'Order Reports',
           href: '/dashboard/order-reports',
-          icon: DocumentTextIcon,
+          icon: ClipboardDocumentListIcon,
           role: 'user'
         },
         {
@@ -152,7 +156,7 @@ export default function Sidebar() {
         {
           name: 'Performance',
           href: '/dashboard/analytics',
-          icon: ChartBarIcon,
+          icon: ChartPieIcon,
           role: 'admin'
         }
       ]
@@ -191,52 +195,28 @@ export default function Sidebar() {
 
             if (visibleItems.length === 0) return null;
 
-            const isOpen = openGroups[section.title];
-
             return (
               <div key={section.title} className="mb-6">
-                <h3
-                  className="flex items-center justify-between px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider cursor-pointer"
-                  onClick={() => toggleGroup(section.title)}
-                >
-                  {section.title}
-                  {isOpen ? (
-                    <ChevronUpIcon className="h-5 w-5 text-gray-400" />
-                  ) : (
-                    <ChevronDownIcon className="h-5 w-5 text-gray-400" />
-                  )}
-                </h3>
-                <div
-                  className={`mt-2 space-y-1 transition-all duration-300 ease-in-out ${
-                    isOpen ? 'max-h-screen' : 'max-h-0 overflow-hidden'
-                  }`}
-                >
-                  {visibleItems.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                      <Link
-                        key={item.name}
-                        href={item.href}
-                        className={`group flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          isActive
-                            ? 'bg-blue-800 text-white '
-                            : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                        }`}
-                      >
-                        <div className="flex items-center">
-                          <item.icon className="mr-3 h-5 w-5" />
-                          {item.name}
-                        </div>
-                        
-                        {item.badge > 0 && (
-                          <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
-                            {item.badge}
-                          </span>
-                        )}
-                      </Link>
-                    );
-                  })}
-                </div>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">{section.title}</h3>
+                {visibleItems.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={`group flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-300 ease-in-out ${
+                        isActive
+                          ? 'bg-blue-800 text-white shadow-lg'
+                          : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <item.icon className="mr-3 h-5 w-5" />
+                        {item.name}
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             );
           })}
