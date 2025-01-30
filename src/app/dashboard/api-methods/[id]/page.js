@@ -148,12 +148,29 @@ const MethodDetails = () => {
   }, []);
 
   const handleTest = () => {
-    const { clientId, clientSecret } = methodDetails;
+    const { clientId, clientSecret, queryParams } = methodDetails;
 
-    if (clientId !== "" && clientSecret !== "") {
+    // Check if created_at_min and created_at_max are in queryParams
+    const hasCreatedAtMin = queryParams.some(param => param.key === 'created_at_min');
+    const hasCreatedAtMax = queryParams.some(param => param.key === 'created_at_max');
+
+    // Open modal only if both keys are present
+    if (hasCreatedAtMin || hasCreatedAtMax) {
+      setIsDateModalOpen(true); // Open the modal to get dates from the user
+    } else if (clientId && clientSecret) {
       handleOAuthRedirect(methodDetails); // Call OAuth redirect if credentials are present
     } else {
       performApiTest(); // Otherwise, perform the API test
+    }
+  };
+
+  const handleDateSubmit = () => {
+    // Ensure the dates are set before testing
+    if (createdAtMin && createdAtMax) {
+      performApiTest(); // Call the test function with the selected dates
+      setIsDateModalOpen(false); // Close the modal
+    } else {
+      alert("Please select both dates."); // Alert if dates are not selected
     }
   };
 
@@ -231,10 +248,7 @@ const MethodDetails = () => {
             />
           </div>
           <button
-            onClick={() => {
-              performApiTest(); // Call the test function with the selected dates
-              setIsDateModalOpen(false); // Close the modal
-            }}
+            onClick={handleDateSubmit} // Call the function to submit the dates
             className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition duration-200"
           >
             Submit

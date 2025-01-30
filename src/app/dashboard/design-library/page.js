@@ -12,7 +12,7 @@ const DesignsComponent = () => {
     const [loading, setLoading] = useState(true); // Loading state
     const [loadingMore, setLoadingMore] = useState(false); // Loading more state
     const [searchTerm, setSearchTerm] = useState(''); // State for search term
-    const [viewMode, setViewMode] = useState('list'); // State for view mode (starting with 'list')
+    const [viewMode, setViewMode] = useState('grid'); // State for view mode (starting with 'list')
     const [dropdownOpen, setDropdownOpen] = useState(false); // State for dropdown visibility
     const [lastVisible, setLastVisible] = useState(null); // Last visible document for pagination
 

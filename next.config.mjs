@@ -27,7 +27,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; connect-src 'self' blob: https://www.recaptcha.net https://identitytoolkit.googleapis.com https://firestore.googleapis.com https://www.pinterest.com https://in.pinterest.com; img-src 'self' data: https://www.recaptcha.net https://www.google.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.recaptcha.net; style-src 'self' 'unsafe-inline';",
+            value: "connect-src 'self' blob: https://www.recaptcha.net https://identitytoolkit.googleapis.com https://firestore.googleapis.com https://www.pinterest.com https://in.pinterest.com https://securetoken.googleapis.com;",
           },
         ],
       },
