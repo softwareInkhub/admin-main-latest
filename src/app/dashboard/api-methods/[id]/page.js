@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase'; // Adjust the import based on your project structure
-import { FaLink, FaKey, FaClipboardList, FaSpinner } from 'react-icons/fa';
+import { FaLink, FaKey, FaClipboardList, FaSpinner, FaEdit } from 'react-icons/fa';
 import Modal from '@/components/Modal'; // Import the Modal component
 
 const MethodDetails = () => {
@@ -17,6 +17,7 @@ const MethodDetails = () => {
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [createdAtMin, setCreatedAtMin] = useState('');
   const [createdAtMax, setCreatedAtMax] = useState('');
+  const [isEditing, setIsEditing] = useState(false); // State for edit mode
 
   useEffect(() => {
     const fetchMethodDetails = async () => {
@@ -35,6 +36,23 @@ const MethodDetails = () => {
 
     fetchMethodDetails();
   }, [id]);
+
+  const handleEditToggle = () => {
+    setIsEditing(!isEditing); // Toggle edit mode
+  };
+
+  const handleSaveChanges = async () => {
+    if (!methodDetails) return;
+
+    const docRef = doc(db, 'declared_api', id);
+    await updateDoc(docRef, methodDetails); // Save changes to Firebase
+    setIsEditing(false); // Exit edit mode after saving
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false); // Exit edit mode without saving
+    // Optionally, you can reset the methodDetails to the original values if needed
+  };
 
   // New useEffect to handle OAuth redirect and token exchange
   useEffect(() => {
@@ -178,36 +196,101 @@ const MethodDetails = () => {
 
   return (
     <div className="p-6 bg-gray-900 min-h-screen text-white">
-      <h1 className="text-3xl font-bold mb-4">{methodDetails.apiTitle}</h1>
+      <div className="flex justify-between mb-4">
+        <h1 className="text-3xl font-bold">{methodDetails.apiTitle}</h1>
+        <div className="flex items-center">
+          <button
+            onClick={handleEditToggle}
+            className="bg-yellow-600 text-white py-2 px-4 rounded hover:bg-yellow-700 transition duration-200 mr-2"
+          >
+            <FaEdit className="inline mr-1" /> Edit
+          </button>
+          <button
+            onClick={() => {/* Add functionality for Create Job here if needed */}}
+            className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition duration-200"
+          >
+            Create Job
+          </button>
+        </div>
+      </div>
       <div className="bg-gray-800 p-4 rounded-lg shadow-md">
-        <p className="flex items-center mb-2">
-          <FaLink className="mr-2" /> <strong>Main URL:</strong> {methodDetails.mainUrl}
-        </p>
-        <p className="flex items-center mb-2">
-          <FaKey className="mr-2" /> <strong>Client ID:</strong> {methodDetails.clientId}
-        </p>
-        <p className="flex items-center mb-2">
-          <FaKey className="mr-2" /> <strong>Client Secret:</strong> {methodDetails.clientSecret}
-        </p>
-        <p className="flex items-center mb-2">
-          <FaLink className="mr-2" /> <strong>Redirect URL:</strong> {methodDetails.redirectUrl}
-        </p>
-        <h2 className="text-xl font-semibold mt-4">Headers:</h2>
-        <ul className="list-disc ml-6">
-          {methodDetails.headers.map((header, index) => (
-            <li key={index}>
-              <strong>{header.key}:</strong> {header.value}
-            </li>
-          ))}
-        </ul>
-        <h2 className="text-xl font-semibold mt-4">Query Parameters:</h2>
-        <ul className="list-disc ml-6">
-          {methodDetails.queryParams.map((param, index) => (
-            <li key={index}>
-              <strong>{param.key}:</strong> {param.value}
-            </li>
-          ))}
-        </ul>
+        {isEditing ? (
+          <>
+            <label className="block text-white mb-2">Main URL:</label>
+            <input
+              type="text"
+              value={methodDetails.mainUrl}
+              onChange={(e) => setMethodDetails({ ...methodDetails, mainUrl: e.target.value })}
+              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700"
+            />
+            <label className="block text-white mb-2">Client ID:</label>
+            <input
+              type="text"
+              value={methodDetails.clientId}
+              onChange={(e) => setMethodDetails({ ...methodDetails, clientId: e.target.value })}
+              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700"
+            />
+            <label className="block text-white mb-2">Client Secret:</label>
+            <input
+              type="text"
+              value={methodDetails.clientSecret}
+              onChange={(e) => setMethodDetails({ ...methodDetails, clientSecret: e.target.value })}
+              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700"
+            />
+            <label className="block text-white mb-2">Redirect URL:</label>
+            <input
+              type="text"
+              value={methodDetails.redirectUrl}
+              onChange={(e) => setMethodDetails({ ...methodDetails, redirectUrl: e.target.value })}
+              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700"
+            />
+            <div className="flex justify-end">
+              <button
+                onClick={handleSaveChanges}
+                className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition duration-200 mr-2"
+              >
+                Save Changes
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition duration-200"
+              >
+                Cancel
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="flex items-center mb-2">
+              <FaLink className="mr-2" /> <strong>Main URL:</strong> {methodDetails.mainUrl}
+            </p>
+            <p className="flex items-center mb-2">
+              <FaKey className="mr-2" /> <strong>Client ID:</strong> {methodDetails.clientId}
+            </p>
+            <p className="flex items-center mb-2">
+              <FaKey className="mr-2" /> <strong>Client Secret:</strong> {methodDetails.clientSecret}
+            </p>
+            <p className="flex items-center mb-2">
+              <FaLink className="mr-2" /> <strong>Redirect URL:</strong> {methodDetails.redirectUrl}
+            </p>
+            <h2 className="text-xl font-semibold mt-4">Headers:</h2>
+            <ul className="list-disc ml-6">
+              {methodDetails.headers.map((header, index) => (
+                <li key={index}>
+                  <strong>{header.key}:</strong> {header.value}
+                </li>
+              ))}
+            </ul>
+            <h2 className="text-xl font-semibold mt-4">Query Parameters:</h2>
+            <ul className="list-disc ml-6">
+              {methodDetails.queryParams.map((param, index) => (
+                <li key={index}>
+                  <strong>{param.key}:</strong> {param.value}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
       </div>
 
       {/* Test Button */}

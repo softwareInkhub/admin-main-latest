@@ -94,7 +94,7 @@ const ApiAccountsPage = () => {
       });
 
       // Fetch declared APIs
-      const apiQuery = query(collection(db, 'declared_api'), where('apiAccountId', '==', id));
+      const apiQuery = query(collection(db, 'declared_api'), where('apiNameId', '==', id));
       const unsubscribeApis = onSnapshot(apiQuery, (apiSnapshot) => {
         const apiData = apiSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setDeclaredApis(apiData);
