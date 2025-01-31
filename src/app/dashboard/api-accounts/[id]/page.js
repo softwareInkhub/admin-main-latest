@@ -8,6 +8,7 @@ import { doc, getDoc, collection, query, where, getDocs, setDoc, onSnapshot } fr
 import { v4 as uuidv4 } from 'uuid'; // Import UUID
 import { FaPlus, FaLink, FaUser, FaClock, FaCheckDouble, FaSpinner } from 'react-icons/fa'; // Importing icons
 import Modal from '@/components/Modal'; // Import the existing Modal component
+import CreateMethodModal from '@/components/CreateMethodModal'; // Import the new modal component
 
 const ApiAccountsPage = () => {
     const { id } = useParams();
@@ -357,124 +358,14 @@ const ApiAccountsPage = () => {
       )}
 
       {/* Method Creation Modal */}
-      {isMethodModalOpen && (
-        <Modal onClose={() => setIsMethodModalOpen(false)}>
-          <h2 className="text-lg font-bold">Create New Method</h2>
-          <div className="mt-4">
-            <label className="block text-white">API Title:</label>
-            <input
-              type="text"
-              value={newMethod.apiTitle}
-              onChange={(e) => setNewMethod({ ...newMethod, apiTitle: e.target.value })}
-              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700 text-white"
-            />
-            <label className="block text-white">Main URL:</label>
-            <input
-              type="text"
-              value={newMethod.mainUrl}
-              onChange={(e) => setNewMethod({ ...newMethod, mainUrl: e.target.value })}
-              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700 text-white"
-            />
-            <label className="block text-white">Method:</label>
-            <input
-              type="text"
-              value={newMethod.method}
-              onChange={(e) => setNewMethod({ ...newMethod, method: e.target.value })}
-              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700 text-white"
-            />
-            <label className="block text-white">Client ID:</label>
-            <input
-              type="text"
-              value={newMethod.clientId}
-              onChange={(e) => setNewMethod({ ...newMethod, clientId: e.target.value })}
-              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700 text-white"
-            />
-            <label className="block text-white">Client Secret:</label>
-            <input
-              type="text"
-              value={newMethod.clientSecret}
-              onChange={(e) => setNewMethod({ ...newMethod, clientSecret: e.target.value })}
-              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700 text-white"
-            />
-            <label className="block text-white">Redirect URL:</label>
-            <input
-              type="text"
-              value={newMethod.redirectUrl}
-              onChange={(e) => setNewMethod({ ...newMethod, redirectUrl: e.target.value })}
-              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700 text-white"
-            />
-            <label className="block text-white">Select API Account:</label>
-            <select
-              value={newMethod.apiAccountId}
-              onChange={(e) => setNewMethod({ ...newMethod, apiAccountId: e.target.value })}
-              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700 text-white"
-            >
-              <option value="">Select an account</option>
-              {allAccounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.apiAccountName}
-                </option>
-              ))}
-            </select>
-            <h3 className="text-white">Headers:</h3>
-            {newMethod.headers.map((header, index) => (
-              <div key={index} className="flex mb-2">
-                <input
-                  type="text"
-                  placeholder="Header Key"
-                  value={header.key}
-                  onChange={(e) => handleHeaderChange(index, 'key', e.target.value)}
-                  className="border border-gray-600 p-2 rounded bg-gray-700 text-white mr-2"
-                />
-                <input
-                  type="text"
-                  placeholder="Header Value"
-                  value={header.value}
-                  onChange={(e) => handleHeaderChange(index, 'value', e.target.value)}
-                  className="border border-gray-600 p-2 rounded bg-gray-700 text-white"
-                />
-              </div>
-            ))}
-            <button 
-              onClick={handleAddHeader} 
-              className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition duration-200 mb-4"
-            >
-              Add Header
-            </button>
-            <h3 className="text-white">Query Parameters:</h3>
-            {newMethod.queryParams.map((param, index) => (
-              <div key={index} className="flex mb-2">
-                <input
-                  type="text"
-                  placeholder="Param Key"
-                  value={param.key}
-                  onChange={(e) => handleQueryParamChange(index, 'key', e.target.value)}
-                  className="border border-gray-600 p-2 rounded bg-gray-700 text-white mr-2"
-                />
-                <input
-                  type="text"
-                  placeholder="Param Value"
-                  value={param.value}
-                  onChange={(e) => handleQueryParamChange(index, 'value', e.target.value)}
-                  className="border border-gray-600 p-2 rounded bg-gray-700 text-white"
-                />
-              </div>
-            ))}
-            <button 
-              onClick={handleAddQueryParam} 
-              className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition duration-200 mb-4"
-            >
-              Add Query Parameter
-            </button>
-          </div>
-          <button
-            onClick={handleCreateMethod}
-            className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition duration-200"
-          >
-            Create Method
-          </button>
-        </Modal>
-      )}
+      <CreateMethodModal
+        isOpen={isMethodModalOpen}
+        onClose={() => setIsMethodModalOpen(false)}
+        onSubmit={handleCreateMethod}
+        allAccounts={allAccounts}
+        newMethod={newMethod}
+        setNewMethod={setNewMethod}
+      />
     </div>
   );
 };

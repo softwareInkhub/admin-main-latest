@@ -46,23 +46,29 @@ export default function Sidebar() {
       title: "API Manager",
       items: [
         {
+          name: 'API Dashboard',
+          href: '/dashboard/api-dashboard',
+          icon: UserPlusIcon,
+          role: 'admin'
+        },
+        {
           name: 'API',
           href: '/dashboard/api',
           icon: UserPlusIcon,
           role: 'admin'
         },
-        {
-          name: 'Declare Api',
-          href: '/dashboard/declare-api',
-          icon: CheckCircleIcon,
-          role: 'admin'
-        },
-        {
-          name: 'API Method',
-          href: '/dashboard/api-names',
-          icon: ClipboardIcon,
-          role: 'admin'
-        }
+        // {
+        //   name: 'Declare Api',
+        //   href: '/dashboard/declare-api',
+        //   icon: CheckCircleIcon,
+        //   role: 'admin'
+        // },
+        // {
+        //   name: 'API Method',
+        //   href: '/dashboard/api-names',
+        //   icon: ClipboardIcon,
+        //   role: 'admin'
+        // }
       ]
     },
     {
@@ -82,17 +88,17 @@ export default function Sidebar() {
         }
       ]
     },
-    {
-      title: "PINTEREST",
-      items: [
-        {
-          name: 'Dashboard',
-          href: '/dashboard/job-manager/pinterest/dashboard',
-          icon: ChartBarIcon,
-          role: 'admin'
-        }
-      ]
-    },
+    // {
+    //   title: "PINTEREST",
+    //   items: [
+    //     {
+    //       name: 'Dashboard',
+    //       href: '/dashboard/job-manager/pinterest/dashboard',
+    //       icon: ChartBarIcon,
+    //       role: 'admin'
+    //     }
+    //   ]
+    // },
     {
       title: "DESIGN",
       items: [
@@ -104,29 +110,29 @@ export default function Sidebar() {
         }
       ]
     },
-    {
-      title: "ORDERS",
-      items: [
-        {
-          name: 'All Orders',
-          href: '/dashboard/orders',
-          icon: ShoppingCartIcon,
-          role: 'user'
-        },
-        {
-          name: 'Order Reports',
-          href: '/dashboard/order-reports',
-          icon: ClipboardDocumentListIcon,
-          role: 'user'
-        },
-        {
-          name: 'Order Archive',
-          href: '/dashboard/order-archive',
-          icon: ArchiveBoxIcon,
-          role: 'user'
-        }
-      ]
-    },
+    // {
+    //   title: "ORDERS",
+    //   items: [
+    //     {
+    //       name: 'All Orders',
+    //       href: '/dashboard/orders',
+    //       icon: ShoppingCartIcon,
+    //       role: 'user'
+    //     },
+    //     {
+    //       name: 'Order Reports',
+    //       href: '/dashboard/order-reports',
+    //       icon: ClipboardDocumentListIcon,
+    //       role: 'user'
+    //     },
+    //     {
+    //       name: 'Order Archive',
+    //       href: '/dashboard/order-archive',
+    //       icon: ArchiveBoxIcon,
+    //       role: 'user'
+    //     }
+    //   ]
+    // },
     {
       title: "USER MANAGEMENT",
       items: [
@@ -150,34 +156,8 @@ export default function Sidebar() {
         }
       ]
     },
-    {
-      title: "ANALYTICS",
-      items: [
-        {
-          name: 'Performance',
-          href: '/dashboard/analytics',
-          icon: ChartPieIcon,
-          role: 'admin'
-        }
-      ]
-    },
-    {
-      title: "SETTINGS",
-      items: [
-        {
-          name: 'General Settings',
-          href: '/dashboard/settings',
-          icon: Cog6ToothIcon,
-          role: 'admin'
-        },
-        {
-          name: 'Profile Settings',
-          href: '/dashboard/profile',
-          icon: UserIcon,
-          role: 'user'
-        }
-      ]
-    }
+   
+   
   ];
 
   return (
