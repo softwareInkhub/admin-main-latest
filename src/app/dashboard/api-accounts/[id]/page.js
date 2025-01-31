@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { db } from '../../../../lib/firebase'; // Adjust the path as necessary
 import { doc, getDoc, collection, query, where, getDocs, setDoc, onSnapshot } from 'firebase/firestore';
@@ -10,7 +10,8 @@ import { FaPlus, FaLink, FaUser, FaClock, FaCheckDouble, FaSpinner } from 'react
 import Modal from '@/components/Modal'; // Import the existing Modal component
 
 const ApiAccountsPage = () => {
-  const { id } = useParams();
+    const { id } = useParams();
+  const router = useRouter();
 
   // Fetch account details and declared APIs based on the id
   const [accountDetails, setAccountDetails] = useState(null);
@@ -43,8 +44,26 @@ const ApiAccountsPage = () => {
     mainUrl: '', 
     method: '', 
     queryParams: [], 
-    headers: [] 
+    headers: [],
+    clientId: '',
+    clientSecret: '',
+    redirectUrl: '',
+    apiAccountId: '' // New field for selected API account ID
   }); // State for new method
+
+  const handleOAuthRedirect = useCallback((api) => {
+    const scopes = ['boards:read', 'boards:write', 'pins:read', 'pins:write'];
+    const authUrl = new URL('https://www.pinterest.com/oauth/');
+    
+    // Use the client ID and redirect URL from the API data
+    authUrl.searchParams.append('client_id', api.clientId);
+    authUrl.searchParams.append('redirect_uri', api.redirectUrl);
+    authUrl.searchParams.append('response_type', 'code');
+    authUrl.searchParams.append('scope', scopes.join(','));
+
+    // Redirect to Pinterest OAuth
+    window.location.href = authUrl.toString();
+  }, []);
 
   useEffect(() => {
     const fetchData = () => {
@@ -128,79 +147,10 @@ const ApiAccountsPage = () => {
     return 'N/A'; // Fallback if timestamp is not valid
   };
 
-  const handleTest = async (api) => {
-    setLoadingApi(api.id); // Set loading state for the specific API
-    const { mainUrl, method, headers } = api;
+  
 
-    const params = Array.isArray(api.queryParams) ? api.queryParams : [];
-    const createdAtMinParam = params.find(param => param.key === 'created_at_min');
-    const createdAtMaxParam = params.find(param => param.key === 'created_at_max');
 
-    if (createdAtMinParam || createdAtMaxParam) {
-      setSelectedApi(api);
-      setIsDateModalOpen(true); // Open the date modal
-    } else {
-      // Proceed with the API test without date range
-      await performApiTest(api);
-    }
-
-    setLoadingApi(null);
-  };
-
-  const performApiTest = async (api) => {
-    const { mainUrl, method, headers } = api;
-
-    // Prepare the request body
-    const body = {
-      url: mainUrl,
-      method: method,
-      headers: headers.reduce((acc, header) => {
-        acc[header.key] = header.value; // Convert headers to an object
-        return acc;
-      }, {}),
-    };
-
-    // Append created_at_min and created_at_max if they exist
-    if (createdAtMin) {
-      body.url += `&created_at_min=${encodeURIComponent(createdAtMin)}`;
-    }
-    if (createdAtMax) {
-      body.url += `&created_at_max=${encodeURIComponent(createdAtMax)}`;
-    }
-
-    try {
-      const response = await fetch('/api/apiCall', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log('API Test Response:', data); // Log the response for debugging
-
-      // Update test results to indicate success
-      setTestResults((prev) => ({ ...prev, [api.id]: true }));
-      setApiResponse(data); // Set the API response to state for display
-    } catch (error) {
-      console.error('Error testing API:', error);
-    } finally {
-      setLoadingApi(null); // Reset loading state after response
-    }
-  };
-
-  const handleDateSubmit = () => {
-    // Call the performApiTest function with the selected API
-    performApiTest(selectedApi);
-    setIsDateModalOpen(false); // Close the date modal
-  };
+  
 
   const handleCreateMethod = async () => {
     const methodId = uuidv4();
@@ -212,7 +162,10 @@ const ApiAccountsPage = () => {
       method: newMethod.method,
       queryParams: newMethod.queryParams,
       headers: newMethod.headers,
-      apiAccountId: id,
+      clientId: newMethod.clientId,
+      clientSecret: newMethod.clientSecret,
+      redirectUrl: newMethod.redirectUrl,
+      apiAccountId: newMethod.apiAccountId, // Save selected API account ID
       createdAt: new Date().toISOString(),
       createdBy: 'yourUserId', // Replace with actual user ID
       uuid: methodId,
@@ -220,7 +173,17 @@ const ApiAccountsPage = () => {
     });
 
     setIsMethodModalOpen(false); // Close the method modal
-    setNewMethod({ apiTitle: '', mainUrl: '', method: '', queryParams: [], headers: [] }); // Reset new method state
+    setNewMethod({ 
+      apiTitle: '', 
+      mainUrl: '', 
+      method: '', 
+      queryParams: [], 
+      headers: [],
+      clientId: '',
+      clientSecret: '',
+      redirectUrl: '',
+      apiAccountId: '' // Reset selected API account ID
+    }); // Reset new method state
   };
 
   const handleAddHeader = () => {
@@ -304,13 +267,17 @@ const ApiAccountsPage = () => {
       {/* New Section for All Accounts */}
       <div className="mt-6">
         <h2 className="text-lg font-bold">All Accounts for {accountDetails.apiName}</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {allAccounts.map((account) => (
-            <div key={account.id} className="bg-gray-800 border rounded-lg p-4 shadow-lg transition-transform transform hover:scale-105 hover:shadow-xl">
-              <h3 className="font-semibold text-xl">{account.apiAccountName}</h3>
-              <p className="flex items-center"><FaLink className="mr-2" /><strong>API Name:</strong> {account.apiName}</p>
-              <p className="flex items-center"><FaClock className="mr-2" /><strong>Created At:</strong> {formatTimestamp(account.createdAt)}</p>
-              <p className="flex items-center"><FaUser className="mr-2" /><strong>Created By:</strong> {account.createdBy}</p>
+        <div className="grid grid-cols-3 gap-4">
+          {allAccounts.map(account => (
+            <div 
+              key={account.id} 
+              className="bg-gray-800 p-4 rounded-lg cursor-pointer" 
+              onClick={() => router.push(`/dashboard/account-details/${account.id}`)} // Navigate to account details
+            >
+              <h3 className="text-lg font-bold">{account.apiAccountName}</h3>
+              <p><strong>API Name:</strong> {account.apiName}</p>
+              <p><strong>Created At:</strong> {formatTimestamp(account.createdAt)}</p>
+              <p><strong>Created By:</strong> {account.createdBy}</p>
             </div>
           ))}
         </div>
@@ -329,9 +296,13 @@ const ApiAccountsPage = () => {
        </div>
         {declaredApis.length > 0 ? (
           declaredApis.map((api) => (
-            <div key={api.id} className="border rounded-lg p-2 mb-2 bg-gray-700 shadow-sm">
-              <p className="flex items-center"><strong>Title: </strong> {api.apiTitle}</p>
-              <p className="flex items-center"><strong>Main URL:</strong> {api.mainUrl}</p>
+            <div 
+              key={api.id} 
+              className="method-item cursor-pointer p-4 border rounded-lg bg-gray-800 mb-4" 
+              onClick={() => router.push(`/dashboard/api-methods/${api.id}`)} // Navigate to method details
+            >
+              <h3 className="text-lg font-bold">{api.apiTitle}</h3>
+              <p>Main URL: {api.mainUrl}</p>
               {testResults[api.id] === true && (
                 <span className="text-green-500 flex items-center">
                   {[...Array(5)].map((_, index) => (
@@ -339,20 +310,7 @@ const ApiAccountsPage = () => {
                   ))}
                 </span>
               )}
-              <button
-                onClick={() => handleTest(api)}
-                disabled={loadingApi === api.id}
-                className={`mt-4 w-full p-2 rounded-md transition duration-200 flex items-center justify-center ${loadingApi === api.id ? 'bg-gray-600' : 'bg-green-600 hover:bg-green-700 text-white'}`}
-              >
-                {loadingApi === api.id ? (
-                  <>
-                    <FaSpinner className="animate-spin mr-2" />
-                    Testing...
-                  </>
-                ) : (
-                  'Test'
-                )}
-              </button>
+             
             </div>
           ))
         ) : (
@@ -424,6 +382,40 @@ const ApiAccountsPage = () => {
               onChange={(e) => setNewMethod({ ...newMethod, method: e.target.value })}
               className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700 text-white"
             />
+            <label className="block text-white">Client ID:</label>
+            <input
+              type="text"
+              value={newMethod.clientId}
+              onChange={(e) => setNewMethod({ ...newMethod, clientId: e.target.value })}
+              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700 text-white"
+            />
+            <label className="block text-white">Client Secret:</label>
+            <input
+              type="text"
+              value={newMethod.clientSecret}
+              onChange={(e) => setNewMethod({ ...newMethod, clientSecret: e.target.value })}
+              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700 text-white"
+            />
+            <label className="block text-white">Redirect URL:</label>
+            <input
+              type="text"
+              value={newMethod.redirectUrl}
+              onChange={(e) => setNewMethod({ ...newMethod, redirectUrl: e.target.value })}
+              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700 text-white"
+            />
+            <label className="block text-white">Select API Account:</label>
+            <select
+              value={newMethod.apiAccountId}
+              onChange={(e) => setNewMethod({ ...newMethod, apiAccountId: e.target.value })}
+              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700 text-white"
+            >
+              <option value="">Select an account</option>
+              {allAccounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.apiAccountName}
+                </option>
+              ))}
+            </select>
             <h3 className="text-white">Headers:</h3>
             {newMethod.headers.map((header, index) => (
               <div key={index} className="flex mb-2">
