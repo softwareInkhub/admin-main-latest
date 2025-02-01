@@ -414,44 +414,9 @@ const ApiAccountsPage = () => {
       </div>
 
       {/* API Response Section  */}
-      {apiResponse && (
-        <div className="mt-6 bg-gray-800 border rounded-lg p-4 shadow-md max-h-60 overflow-y-auto">
-          <h2 className="font-semibold text-lg mb-2">API Response</h2>
-          <p className="text-white">Count: {Array.isArray(apiResponse) ? apiResponse.length : 0}</p>
-          <pre className="whitespace-pre-wrap text-sm text-gray-300">{JSON.stringify(apiResponse, null, 2)}</pre>
-        </div>
-      )}
-
+  
       {/* Date Input Modal */}
-      {isDateModalOpen && (
-        <Modal onClose={() => setIsDateModalOpen(false)}>
-          <h2 className="text-lg font-bold">Select Date Range</h2>
-          <div className="mt-4">
-            <label className="block text-white">Created At Min:</label>
-            <input
-              type="date"
-              value={createdAtMin}
-              onChange={(e) => setCreatedAtMin(e.target.value)}
-              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700 text-white"
-            />
-            <label className="block text-white">Created At Max:</label>
-            <input
-              type="date"
-              value={createdAtMax}
-              onChange={(e) => setCreatedAtMax(e.target.value)}
-              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700 text-white"
-            />
-          </div>
-          <button
-            onClick={handleDateSubmit}
-            className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition duration-200"
-          >
-            Submit
-          </button>
-        </Modal>
-      )}
-
-      {/* Method Creation Modal */}
+    
       <CreateMethodModal
         isOpen={isMethodModalOpen}
         onClose={() => setIsMethodModalOpen(false)}

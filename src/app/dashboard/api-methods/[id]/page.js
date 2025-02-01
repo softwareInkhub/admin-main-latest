@@ -21,6 +21,7 @@ const MethodDetails = () => {
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [createdAtMin, setCreatedAtMin] = useState('');
   const [createdAtMax, setCreatedAtMax] = useState('');
+  const [queryParams, setQueryParams] = useState([]); // State for query parameters
 
   useEffect(() => {
     const fetchMethodDetails = async () => {
@@ -31,7 +32,9 @@ const MethodDetails = () => {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          setMethodDetails(docSnap.data());
+          const data = docSnap.data();
+          setMethodDetails(data);
+          setQueryParams(data.queryParams || []); // Initialize queryParams from methodDetails
         } else {
           console.error("No such document!");
         }
@@ -52,12 +55,27 @@ const MethodDetails = () => {
     setIsEditing(!isEditing); // Toggle edit mode
   };
 
+  const handleAddQueryParam = () => {
+    setQueryParams([...queryParams, { key: '', value: '' }]); // Add a new empty query param
+  };
+
+  const handleRemoveQueryParam = (index) => {
+    const newQueryParams = queryParams.filter((_, i) => i !== index); // Remove the query param at the specified index
+    setQueryParams(newQueryParams);
+  };
+
+  const handleQueryParamChange = (index, field, value) => {
+    const newQueryParams = [...queryParams];
+    newQueryParams[index][field] = value; // Update the specific field of the query param
+    setQueryParams(newQueryParams);
+  };
+
   const handleSaveChanges = async () => {
     if (!methodDetails) return;
 
     try {
       const docRef = doc(db, 'declared_api', id);
-      await updateDoc(docRef, methodDetails); // Save changes to Firebase
+      await updateDoc(docRef, { ...methodDetails, queryParams }); // Save changes to Firebase
       toast.success("Changes saved successfully!");
     } catch (error) {
       console.error("Error saving changes:", error);
@@ -80,7 +98,7 @@ const MethodDetails = () => {
       const accountSnapshot = await getDocs(accountQuery);
       const accountData = accountSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       console.log("Fetched accounts:", accountData); // Debugging log
-      setAccounts(accountData);
+      setAccounts(accountData); // Update state with fetched accounts
     } catch (error) {
       console.error("Error fetching accounts:", error);
     }
@@ -118,7 +136,7 @@ const MethodDetails = () => {
       url: url, // Use the constructed URL
       method: 'GET', // or the method you want to use
       headers: {}, // Initialize headers as an object
-      params: (methodDetails.queryParams || []).reduce((acc, param) => {
+      params: (queryParams || []).reduce((acc, param) => {
         acc[param.key] = param.value;
         return acc;
       }, {}),
@@ -139,6 +157,9 @@ const MethodDetails = () => {
         },
         body: JSON.stringify(requestBody), // Send the request body
       });
+
+      console.log("request body", requestBody);
+      
 
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
@@ -186,6 +207,29 @@ const MethodDetails = () => {
           <>
             <label className="block text-white mb-2">Main URL:</label>
             <input type="text" value={methodDetails.mainUrl} onChange={(e) => setMethodDetails({ ...methodDetails, mainUrl: e.target.value })} className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700" />
+            
+            <h2 className="text-xl font-semibold mt-4">Query Parameters:</h2>
+            {queryParams.map((param, index) => (
+              <div key={index} className="flex mb-2">
+                <input
+                  type="text"
+                  placeholder="Key"
+                  value={param.key}
+                  onChange={(e) => handleQueryParamChange(index, 'key', e.target.value)}
+                  className="border border-gray-600 p-2 rounded bg-gray-700 mr-2"
+                />
+                <input
+                  type="text"
+                  placeholder="Value"
+                  value={param.value}
+                  onChange={(e) => handleQueryParamChange(index, 'value', e.target.value)}
+                  className="border border-gray-600 p-2 rounded bg-gray-700 mr-2"
+                />
+                <button onClick={() => handleRemoveQueryParam(index)} className="bg-red-600 text-white py-1 px-2 rounded hover:bg-red-700">Remove</button>
+              </div>
+            ))}
+            <button onClick={handleAddQueryParam} className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">Add Query Parameter</button>
+
             <div className="flex justify-end">
               <button onClick={handleSaveChanges} className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition duration-200 mr-2">
                 Save Changes

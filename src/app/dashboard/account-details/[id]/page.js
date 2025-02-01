@@ -143,14 +143,7 @@ const AccountDetails = () => {
         )}
       </div>
 
-      <h2 className="text-xl font-semibold mt-4">Declared APIs:</h2>
-      <ul className="list-disc ml-6">
-        {declaredApis.map(api => (
-          <li key={api.id}>
-            <strong>{api.apiTitle}</strong> - {api.mainUrl}
-          </li>
-        ))}
-      </ul>
+    
     </div>
   );
 };
