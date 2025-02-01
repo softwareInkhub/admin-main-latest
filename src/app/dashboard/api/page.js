@@ -4,10 +4,11 @@ import React, { useState, useEffect } from 'react'
 import Modal from '../../../components/Modal'; // Adjust the import based on your folder structure
 import { HiOutlinePlusCircle, HiOutlineSave } from 'react-icons/hi'; // New icons for buttons
 import { db } from '../../../lib/firebase'; // Adjust the import based on your folder structure
-import { collection, addDoc, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, doc, setDoc } from 'firebase/firestore';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Link from 'next/link'; // Ensure Link is imported
+import { v4 as uuidv4 } from 'uuid'; // Import uuidv4
 
 
 const Page = () => {
@@ -37,12 +38,13 @@ const Page = () => {
         apiName: apiName,
         createdAt: new Date().toISOString(),
         createdBy: 'yourUserId', // Replace with actual user ID
-        uuid: crypto.randomUUID(),
+        uuid: uuidv4(), // Generate a UUID using uuidv4
       };
 
-      // Save to Firestore
+      // Save to Firestore with UUID as the document ID
       try {
-        await addDoc(collection(db, 'api_names'), apiData);
+        const docRef = doc(db, 'api_names', apiData.uuid); // Use UUID as the document ID
+        await setDoc(docRef, apiData); // Save the data
         toast.success('API data saved successfully!'); // Success toast
       } catch (error) {
         console.error('Error saving API data: ', error);
@@ -92,7 +94,7 @@ const Page = () => {
 
       <div className="mt-16 flex flex-wrap gap-6">
         {apiNames.map((name, index) => (
-          <Link href={`/dashboard/api-accounts/${name.id}`} key={index}>
+          <Link href={`/dashboard/api-accounts/${name.apiName}`} key={index}>
             <div 
               className="bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg cursor-pointer shadow-md p-4 flex items-center justify-center h-32 w-32 transition-transform transform hover:scale-105 hover:shadow-xl relative"
             >

@@ -26,24 +26,8 @@ export async function POST(request) {
   if (params) {
     const queryString = new URLSearchParams(params).toString();
     let modifiedUrl = url; // Change 'url' to 'modifiedUrl' to allow reassignment
-
-    // Check if the query string is not empty
-    if (queryString) {
-      // Check if the URL already has query parameters
-      if (modifiedUrl.includes('?')) {
-        modifiedUrl += '&' + queryString; // Append with '&' if it already has parameters
-      } else {
-        modifiedUrl += '?' + queryString; // Append with '?' if it doesn't have parameters
-      }
-    }
-
-    // Only reassign if the queryString is not empty
+    modifiedUrl += (modifiedUrl.includes('?') ? '&' : '?') + queryString; // Modify the URL
     url = modifiedUrl; // Reassign the modified URL back to 'url'
-  }
-
-  // Ensure that the URL does not end with a '?' if there are no parameters
-  if (url.endsWith('?')) {
-    url = url.slice(0, -1); // Remove the trailing '?'
   }
 
   let allData = [];
@@ -92,7 +76,7 @@ export async function POST(request) {
 
     } else {
       // Existing logic for handling other API requests
-      
+      do {
         // Construct the fetch URL
         let fetchUrl;
 
@@ -189,7 +173,7 @@ export async function POST(request) {
 
         await new Promise(resolve => setTimeout(resolve, 3000)); // Wait for 3 seconds before the next request
 
-      // Continue until there are no more pages
+      } while (nextPageInfo); // Continue until there are no more pages
 
       console.log(`Total data fetched: ${allData.length}`);
       return NextResponse.json({ data: allData }, { status: 200 });

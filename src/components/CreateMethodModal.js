@@ -4,7 +4,7 @@ import React from 'react';
 const CreateMethodModal = ({ isOpen, onClose, onSubmit, allAccounts, newMethod, setNewMethod }) => {
   const handleCreateMethod = (e) => {
     e.preventDefault();
-    onSubmit(newMethod);
+    onSubmit({ ...newMethod, apiAccountId: newMethod.apiAccountId });
     onClose();
   };
 
@@ -13,11 +13,11 @@ const CreateMethodModal = ({ isOpen, onClose, onSubmit, allAccounts, newMethod, 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-80">
       <div className="bg-gray-800 p-6 rounded-lg text-white w-1/2">
-        <h2 className="text-lg font-bold mb-4">Declare API</h2>
+        <h2 className="text-lg font-bold mb-4">Declare Method  </h2>
         <form onSubmit={handleCreateMethod}>
           {/* API Account */}
-          <label className="block text-white mb-2">API Account:</label>
-          <select
+          {/* <label className="block text-white mb-2">API Account:</label> */}
+          {/* <select
             value={newMethod.apiAccountId}
             onChange={(e) => setNewMethod({ ...newMethod, apiAccountId: e.target.value })}
             className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700"
@@ -28,7 +28,7 @@ const CreateMethodModal = ({ isOpen, onClose, onSubmit, allAccounts, newMethod, 
                 {account.apiAccountName}
               </option>
             ))}
-          </select>
+          </select> */}
 
           {/* API Title and Method in the same row */}
           <div className="flex mb-4">
@@ -68,7 +68,7 @@ const CreateMethodModal = ({ isOpen, onClose, onSubmit, allAccounts, newMethod, 
           />
 
           {/* Client ID, Client Secret, and Redirect URL in the same row */}
-          <div className="flex mb-4">
+          {/* <div className="flex mb-4">
             <div className="w-1/3 pr-2">
               <label className="block text-white mb-2">Client ID:</label>
               <input
@@ -99,7 +99,7 @@ const CreateMethodModal = ({ isOpen, onClose, onSubmit, allAccounts, newMethod, 
                 className="border border-gray-600 p-2 w-full rounded bg-gray-700"
               />
             </div>
-          </div>
+          </div> */}
 
           {/* Query Parameters Section */}
           <h3 className="text-lg font-semibold mb-2">Query Parameters:</h3>
@@ -148,7 +148,7 @@ const CreateMethodModal = ({ isOpen, onClose, onSubmit, allAccounts, newMethod, 
           </button>
 
           {/* Headers Section */}
-          <h3 className="text-lg font-semibold mb-2">Headers:</h3>
+          {/* <h3 className="text-lg font-semibold mb-2">Headers:</h3>
           {newMethod.headers.map((header, index) => (
             <div key={index} className="flex mb-2">
               <input
@@ -191,14 +191,14 @@ const CreateMethodModal = ({ isOpen, onClose, onSubmit, allAccounts, newMethod, 
             className="bg-white text-blue-600 rounded-full w-8 h-8 flex items-center justify-center mb-4"
           >
             +
-          </button>
+          </button> */}
 
           <div className="flex justify-end mt-4">
             <button
               type="submit"
               className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition duration-200 mr-2"
             >
-              Declare Variable
+              Save
             </button>
             <button
               type="button"
