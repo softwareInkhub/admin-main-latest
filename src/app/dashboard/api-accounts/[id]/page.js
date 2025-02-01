@@ -4,15 +4,18 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { db } from '../../../../lib/firebase'; // Adjust the path as necessary
-import { doc, getDoc, collection, query, where, getDocs, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, setDoc, onSnapshot, addDoc } from 'firebase/firestore';
 import { v4 as uuidv4 } from 'uuid'; // Import UUID
 import { FaPlus, FaLink, FaUser, FaClock, FaCheckDouble, FaSpinner } from 'react-icons/fa'; // Importing icons
 import Modal from '@/components/Modal'; // Import the existing Modal component
-import CreateMethodModal from '@/components/CreateMethodModal'; // Import the new modal component
+import CreateMethodModal from '@/components/CreateMethodModal'; // Import the modal component
 
 const ApiAccountsPage = () => {
     const { id } = useParams();
   const router = useRouter();
+
+  console.log(id);
+  
 
   // Fetch account details and declared APIs based on the id
   const [accountDetails, setAccountDetails] = useState(null);
@@ -28,6 +31,11 @@ const ApiAccountsPage = () => {
     apiName: '',
     apiNameId: '',
     createdBy: 'yourUserId', // Replace with actual user ID
+    url: '', // New field for URL
+    headers: [{ key: '', value: '' }], // New field for headers
+    clientId: '', // New field for Client ID
+    clientSecret: '', // New field for Client Secret
+    redirectUrl: '', // New field for Redirect URL
   });
 
   const inputRef = useRef(null);
@@ -38,77 +46,84 @@ const ApiAccountsPage = () => {
   const [selectedApi, setSelectedApi] = useState(null);
   const [createdAtMin, setCreatedAtMin] = useState('');
   const [createdAtMax, setCreatedAtMax] = useState('');
+  const [apiNameId, setApiNameId ] = useState('');
   const [apiResponse, setApiResponse] = useState(null); // State to hold API response
   const [isMethodModalOpen, setIsMethodModalOpen] = useState(false); // State for method modal
-  const [newMethod, setNewMethod] = useState({ 
-    apiTitle: '', 
-    mainUrl: '', 
-    method: '', 
-    queryParams: [], 
-    headers: [],
-    clientId: '',
-    clientSecret: '',
-    redirectUrl: '',
-    apiAccountId: '' // New field for selected API account ID
+  const [newMethod, setNewMethod] = useState({
+    apiTitle: '',
+    mainUrl: '',
+    method: 'GET',
+    queryParams: [],
+    // headers: [],
+    // clientId: '',
+    // clientSecret: '',
+    // redirectUrl: '',
+    // apiAccountId: '',
+    apiName:'',
+    apiNameId: '',
+    baseUrl: '',
+    uuid: '',
   }); // State for new method
 
-  const handleOAuthRedirect = useCallback((api) => {
-    const scopes = ['boards:read', 'boards:write', 'pins:read', 'pins:write'];
-    const authUrl = new URL('https://www.pinterest.com/oauth/');
-    
-    // Use the client ID and redirect URL from the API data
-    authUrl.searchParams.append('client_id', api.clientId);
-    authUrl.searchParams.append('redirect_uri', api.redirectUrl);
-    authUrl.searchParams.append('response_type', 'code');
-    authUrl.searchParams.append('scope', scopes.join(','));
 
-    // Redirect to Pinterest OAuth
-    window.location.href = authUrl.toString();
-  }, []);
+  console.log(allAccounts);
+  
 
+ 
   useEffect(() => {
     const fetchData = () => {
-      // Fetch account details
-      const accountDoc = doc(db, 'api_accounts', id);
-      const unsubscribeAccount = onSnapshot(accountDoc, (accountSnapshot) => {
-        if (accountSnapshot.exists()) {
-          const accountData = accountSnapshot.data();
-          setAccountDetails(accountData);
+      const accountsQuery = query(collection(db, 'api_accounts'), where('apiName', '==', id));
+      const unsubscribeAccounts = onSnapshot(accountsQuery, (accountsSnapshot) => {
+        if (!accountsSnapshot.empty) {
+          const accountData = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setAllAccounts(accountData); // Set all accounts
 
-          // Fetch all accounts for the specified API name
-          const accountsQuery = query(collection(db, 'api_accounts'), where('apiNameId', '==', id));
-          const unsubscribeAccounts = onSnapshot(accountsQuery, (accountsSnapshot) => {
-            const accountsData = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            console.log("Fetched Accounts:", accountsData); // Debugging line
-            setAllAccounts(accountsData); // Ensure all accounts are set
+          // Fetch the first account's details
+          const firstAccount = accountData[0];
+          setAccountDetails(firstAccount);
+
+          // Fetch declared APIs based on apiNameId
+          const apiQuery = query(collection(db, 'declared_api'), where('apiName', '==', id));
+          const unsubscribeApis = onSnapshot(apiQuery, (apiSnapshot) => {
+            const apiData = apiSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setDeclaredApis(apiData);
           });
 
-          // Cleanup subscription for accounts
+          // Cleanup subscription for APIs
           return () => {
-            unsubscribeAccounts();
+            unsubscribeApis();
           };
         } else {
-          console.error("No such document!");
-          return; // Exit if no document found
+          console.error("No matching account found!");
+          setAccountDetails(null); // Reset account details if no document found
         }
       });
 
-      // Fetch declared APIs
-      const apiQuery = query(collection(db, 'declared_api'), where('apiNameId', '==', id));
-      const unsubscribeApis = onSnapshot(apiQuery, (apiSnapshot) => {
-        const apiData = apiSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setDeclaredApis(apiData);
-      });
-
-      // Cleanup subscriptions on unmount
+      // Cleanup subscription on unmount
       return () => {
-        unsubscribeAccount();
-        unsubscribeApis();
+        unsubscribeAccounts();
       };
     };
 
     fetchData();
-  }, [id]); // Only depend on 'id' for the initial fetch
+  }, [id]);
+
+  useEffect(() => {
+    const fetchApiNameUuid = async () => {
+      console.log("Fetching API Name UUID for ID:", id); // Log the ID to check its value
+      const apiNameQuery = query(collection(db, 'api_names'), where('apiName', '==', id)); // Ensure 'apiName' matches the field in your collection
+      const apiNameSnapshot = await getDocs(apiNameQuery);
+      if (!apiNameSnapshot.empty) {
+        const apiNameData = apiNameSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setApiNameId(apiNameData)
+        console.log("API UUID:", apiNameData[0].uuid); // Log the UUID of the first matching API name
+      } else {
+        console.error("No matching API name found!");
+      }
+    };
+
+    fetchApiNameUuid();
+  }, [id]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -122,10 +137,16 @@ const ApiAccountsPage = () => {
     // Save the new account with relevant data
     await setDoc(accountDocRef, {
       apiAccountName: newAccount.apiAccountName,
-      apiNameId: id, // Set to empty or default value if not needed
+      apiName: id,
+      apiNameId: apiNameId, // Ensure this is defined
       createdAt: new Date().toISOString(),
       createdBy: newAccount.createdBy,
-      uuid: accountId,
+      uuid: accountId, // Use accountId directly
+      url: newAccount.url,
+      headers: newAccount.headers,
+      clientId: newAccount.clientId,
+      clientSecret: newAccount.clientSecret,
+      redirectUrl: newAccount.redirectUrl,
     });
 
     setIsModalOpen(false);
@@ -137,7 +158,8 @@ const ApiAccountsPage = () => {
     }
   }, [isModalOpen]);
 
-  if (!accountDetails) return <div className="text-center text-white">Loading...</div>; // Loading state
+  // Check if accountDetails is null before rendering
+ 
 
   // Function to format Firestore timestamp
   const formatTimestamp = (timestamp) => {
@@ -149,89 +171,84 @@ const ApiAccountsPage = () => {
   };
 
   
-
-
   
+ 
 
-  const handleCreateMethod = async () => {
-    const methodId = uuidv4();
-    const methodDocRef = doc(db, 'declared_api', methodId);
+  const handleCreateMethod = async (methodData) => {
+    const methodId = uuidv4(); // Generate a unique ID for the method
 
-    await setDoc(methodDocRef, {
-      apiTitle: newMethod.apiTitle,
-      mainUrl: newMethod.mainUrl,
-      method: newMethod.method,
-      queryParams: newMethod.queryParams,
-      headers: newMethod.headers,
-      clientId: newMethod.clientId,
-      clientSecret: newMethod.clientSecret,
-      redirectUrl: newMethod.redirectUrl,
-      apiAccountId: newMethod.apiAccountId, // Save selected API account ID
-      createdAt: new Date().toISOString(),
-      createdBy: 'yourUserId', // Replace with actual user ID
-      uuid: methodId,
-      apiNameId: id,
-    });
+    try {
+      // Add the new method to the declared_api collection with the generated ID
+      await setDoc(doc(db, 'declared_api', methodId), {
+        apiTitle: methodData.apiTitle,
+        mainUrl: methodData.mainUrl,
+        method: methodData.method,
+        apiName:id,   
+        queryParams: methodData.queryParams,
+        // headers: methodData.headers,
+        // clientId: methodData.clientId,
+        // clientSecret: methodData.clientSecret,
+        // redirectUrl: methodData.redirectUrl,
+        // apiAccountId: methodData.apiAccountId, // Ensure apiAccountId is included
+        apiNameId: apiNameId[0].uuid, // Store the API name ID
+        createdAt: new Date().toISOString(), // Optional: Add a timestamp
+      });
 
-    setIsMethodModalOpen(false); // Close the method modal
-    setNewMethod({ 
-      apiTitle: '', 
-      mainUrl: '', 
-      method: '', 
-      queryParams: [], 
-      headers: [],
-      clientId: '',
-      clientSecret: '',
-      redirectUrl: '',
-      apiAccountId: '' // Reset selected API account ID
-    }); // Reset new method state
+      console.log("Document written with ID: ", methodId);
+      // Reset newMethod state after submission
+      setNewMethod({
+        apiTitle: '',
+        mainUrl: '',
+        method: 'GET',
+        queryParams: [],
+        // headers: [],
+        // clientId: '',
+        // clientSecret: '',
+        // redirectUrl: '',
+        // apiAccountId: '', // Reset apiAccountId
+        apiNameId: '',
+        uuid: '',
+      });
+      setIsMethodModalOpen(false); // Close the modal
+    } catch (error) {
+      console.error("Error adding document: ", error);
+    }
   };
 
-  const handleAddHeader = () => {
-    setNewMethod((prev) => ({
-      ...prev,
-      headers: [...prev.headers, { key: '', value: '' }]
+  const addHeader = () => {
+    setNewAccount((prev) => ({
+        ...prev,
+        headers: [...prev.headers, { key: '', value: '' }],
+    }));
+  };
+
+  const removeHeader = (index) => {
+    setNewAccount((prev) => ({
+        ...prev,
+        headers: prev.headers.filter((_, i) => i !== index),
     }));
   };
 
   const handleHeaderChange = (index, field, value) => {
-    const updatedHeaders = [...newMethod.headers];
+    const updatedHeaders = [...newAccount.headers];
     updatedHeaders[index][field] = value;
-    setNewMethod((prev) => ({ ...prev, headers: updatedHeaders }));
-  };
-
-  const handleAddQueryParam = () => {
-    setNewMethod((prev) => ({
-      ...prev,
-      queryParams: [...prev.queryParams, { key: '', value: '' }]
+    setNewAccount((prev) => ({
+        ...prev,
+        headers: updatedHeaders,
     }));
-  };
-
-  const handleQueryParamChange = (index, field, value) => {
-    const updatedQueryParams = [...newMethod.queryParams];
-    updatedQueryParams[index][field] = value;
-    setNewMethod((prev) => ({ ...prev, queryParams: updatedQueryParams }));
   };
 
   return (
     <div className=" bg-gray-900 min-h-screen w-full text-white">
       {/* Nav Bar Section */}
-      <div className="flex justify-between items-center p-4 bg-gray-800 shadow-md rounded-lg">
-        <h1 className="text-2xl font-bold">Account Details for {accountDetails.apiName}</h1>
-        <button 
-          onClick={() => setIsModalOpen(true)} 
-          className="flex items-center bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition duration-200"
-        >
-          <FaPlus className="mr-2" /> Add Account
-        </button>
-      </div>
+    
 
       {/* Modal for Adding New Account */}
       {isModalOpen && (
         <div className="fixed z-50 inset-0 flex items-center justify-center bg-black bg-opacity-70">
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg transform transition-all duration-300 scale-100">
-            <h2 className="text-lg font-bold">Add New Account</h2>
-            <form onSubmit={(e) => { e.preventDefault(); handleAddAccount(); }}>
+          <div className="bg-gray-800 p-8 rounded-lg shadow-lg transform transition-all duration-300 scale-100 max-w-md w-full">
+            <h2 className="text-2xl font-bold text-center mb-6">Add New Account</h2>
+            <form onSubmit={(e) => { e.preventDefault(); handleAddAccount(); }} className="space-y-4">
               <input 
                 ref={inputRef}
                 type="text" 
@@ -240,51 +257,127 @@ const ApiAccountsPage = () => {
                 value={newAccount.apiAccountName} 
                 onChange={handleInputChange} 
                 required 
-                className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700 text-white"
+                className="border border-gray-600 p-3 rounded-lg w-full bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <button type="submit" className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition duration-200">
-                Save
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setIsModalOpen(false)} 
-                className="bg-red-600 text-white py-2 px-4 rounded ml-2 hover:bg-red-700 transition duration-200"
-              >
-                Cancel
-              </button>
+              {id.toLowerCase() === 'pinterest' ? ( // Conditional rendering for Pinterest
+                <>
+                  <input 
+                    type="text" 
+                    name="clientId" 
+                    placeholder="Client ID" 
+                    value={newAccount.clientId} 
+                    onChange={handleInputChange} 
+                    className="border border-gray-600 p-3 rounded-lg w-full bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <input 
+                    type="text" 
+                    name="clientSecret" 
+                    placeholder="Client Secret" 
+                    value={newAccount.clientSecret} 
+                    onChange={handleInputChange} 
+                    className="border border-gray-600 p-3 rounded-lg w-full bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <input 
+                    type="text" 
+                    name="redirectUrl" 
+                    placeholder="Redirect URL" 
+                    value={newAccount.redirectUrl} 
+                    onChange={handleInputChange} 
+                    className="border border-gray-600 p-3 rounded-lg w-full bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </>
+              ) : (
+                <>
+                  <input 
+                    type="text" 
+                    name="url" 
+                    placeholder="API URL" 
+                    value={newAccount.url} 
+                    onChange={handleInputChange} 
+                    required 
+                    className="border border-gray-600 p-3 rounded-lg w-full bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  {newAccount.headers.map((header, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <input 
+                        type="text" 
+                        placeholder="Header Key" 
+                        value={header.key} 
+                        onChange={(e) => handleHeaderChange(index, 'key', e.target.value)} 
+                        className="border border-gray-600 p-3 rounded-lg w-1/2 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <input 
+                        type="text" 
+                        placeholder="Header Value" 
+                        value={header.value} 
+                        onChange={(e) => handleHeaderChange(index, 'value', e.target.value)} 
+                        className="border border-gray-600 p-3 rounded-lg w-1/2 bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                      <button type="button" onClick={() => removeHeader(index)} className="bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition duration-200">
+                        <span className="text-lg">−</span>
+                      </button>
+                    </div>
+                  ))}
+                  <button type="button" onClick={addHeader} className="bg-blue-600 text-white p-2 rounded-lg flex items-center justify-center w-full hover:bg-blue-700 transition duration-200">
+                    <span className="text-lg">+</span> Add Header
+                  </button>
+                </>
+              )}
+              <div className="flex justify-between">
+                <button type="submit" className="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition duration-200 w-full mr-2">
+                  Save
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)} 
+                  className="bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition duration-200 w-full ml-2"
+                >
+                  Cancel
+                </button>
+              </div>
             </form>
           </div>
         </div>
       )}
 
       {/* Account Details Section */}
-      <div className="mt-6 bg-gray-800 border rounded-lg p-4 shadow-md">
+      <div className="mt-6 bg-gray-800 border rounded-lg p-4 shadow-md"
+
+      >
         <h2 className="font-semibold text-lg">Account Information</h2>
-        <p><strong>API Name:</strong> {accountDetails.apiName}</p>
-        <p><strong>Created At:</strong> {formatTimestamp(accountDetails.createdAt)}</p>
-        <p><strong>Created By:</strong> {accountDetails.createdBy}</p>
+        <p><strong>API Name:</strong> {id}</p> 
+        <p><strong>Created At:</strong> {formatTimestamp(apiNameId.createdAt)}</p>
+        <p><strong>Created By:</strong> {apiNameId.createdBy}</p>
       </div>
 
       {/* New Section for All Accounts */}
-      <div className="mt-6">
-        <h2 className="text-lg font-bold">All Accounts for {accountDetails.apiName}</h2>
-        <div className="grid grid-cols-3 gap-4">
-          {allAccounts.map(account => (
+      <div className="mt-6 bg-gray-800 border rounded-lg p-4 shadow-md overflow-x-auto">
+       <div className='flex justify-between items-center mb-4'>
+       <h2 className="text-lg font-bold ">All Accounts for {id}</h2>
+        <button 
+          onClick={() => setIsModalOpen(true)} 
+          className="flex items-center bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition duration-200"
+        >
+          <FaPlus className="mr-2" /> Add Account
+        </button>
+       </div>
+        <div className="flex space-x-4">
+          {allAccounts.map((account) => (
             <div 
               key={account.id} 
-              className="bg-gray-800 p-4 rounded-lg cursor-pointer" 
-              onClick={() => router.push(`/dashboard/account-details/${account.id}`)} // Navigate to account details
+              className="bg-gray-800 border rounded-lg p-4 shadow-lg transition-transform transform hover:scale-105 hover:shadow-xl cursor-pointer w-72"
+              onClick={() => router.push(`/dashboard/account-details/${account.apiAccountName}`)}
             >
-              <h3 className="text-lg font-bold">{account.apiAccountName}</h3>
-              <p><strong>API Name:</strong> {account.apiName}</p>
-              <p><strong>Created At:</strong> {formatTimestamp(account.createdAt)}</p>
-              <p><strong>Created By:</strong> {account.createdBy}</p>
+              <h3 className="font-semibold text-xl">{account.apiAccountName}</h3>
+              <p className="flex items-center"><FaLink className="mr-2" /><strong>API Name:</strong> {id}</p>
+              <p className="flex items-center"><FaClock className="mr-2" /><strong>Created At:</strong> {formatTimestamp(account.createdAt)}</p> 
+              <p className="flex items-center"><FaUser className="mr-2" /><strong>Created By:</strong> {account.createdBy}</p>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Declared APIs Section */}
+       {/* Declared APIs Section  */}
       <div className="mt-6 bg-gray-800 border rounded-lg p-4 shadow-md">
        <div className="flex justify-between items-center">
        <h2 className="font-semibold text-lg mb-2">Methods</h2>
@@ -296,73 +389,39 @@ const ApiAccountsPage = () => {
         </button>
        </div>
         {declaredApis.length > 0 ? (
-          declaredApis.map((api) => (
-            <div 
-              key={api.id} 
-              className="method-item cursor-pointer p-4 border rounded-lg bg-gray-800 mb-4" 
-              onClick={() => router.push(`/dashboard/api-methods/${api.id}`)} // Navigate to method details
-            >
-              <h3 className="text-lg font-bold">{api.apiTitle}</h3>
-              <p>Main URL: {api.mainUrl}</p>
-              {testResults[api.id] === true && (
-                <span className="text-green-500 flex items-center">
-                  {[...Array(5)].map((_, index) => (
-                    <FaCheckDouble key={index} className="text-green-500" />
-                  ))}
-                </span>
-              )}
-             
-            </div>
-          ))
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {declaredApis.map((api) => (
+              <div 
+                key={api.id} 
+                className="method-item cursor-pointer border rounded-lg bg-gray-800 mb-4 p-2 h-24 flex flex-col justify-between"
+                onClick={() => router.push(`http://localhost:3000/dashboard/api-methods/${api.id}`)}
+              >
+                <h3 className="font-bold">{api.apiTitle}</h3>
+                <p className="text-sm">Main URL: {api.mainUrl}</p>
+                {testResults[api.id] === true && (
+                  <span className="text-green-500 flex items-center">
+                    {[...Array(5)].map((_, index) => (
+                      <FaCheckDouble key={index} className="text-green-500" />
+                    ))}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
         ) : (
           <p>No declared APIs found for this account.</p>
         )}
       </div>
 
-      {/* API Response Section */}
-      {apiResponse && (
-        <div className="mt-6 bg-gray-800 border rounded-lg p-4 shadow-md max-h-60 overflow-y-auto">
-          <h2 className="font-semibold text-lg mb-2">API Response</h2>
-          <p className="text-white">Count: {Array.isArray(apiResponse) ? apiResponse.length : 0}</p>
-          <pre className="whitespace-pre-wrap text-sm text-gray-300">{JSON.stringify(apiResponse, null, 2)}</pre>
-        </div>
-      )}
-
+      {/* API Response Section  */}
+  
       {/* Date Input Modal */}
-      {isDateModalOpen && (
-        <Modal onClose={() => setIsDateModalOpen(false)}>
-          <h2 className="text-lg font-bold">Select Date Range</h2>
-          <div className="mt-4">
-            <label className="block text-white">Created At Min:</label>
-            <input
-              type="date"
-              value={createdAtMin}
-              onChange={(e) => setCreatedAtMin(e.target.value)}
-              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700 text-white"
-            />
-            <label className="block text-white">Created At Max:</label>
-            <input
-              type="date"
-              value={createdAtMax}
-              onChange={(e) => setCreatedAtMax(e.target.value)}
-              className="border border-gray-600 p-2 mb-4 w-full rounded bg-gray-700 text-white"
-            />
-          </div>
-          <button
-            onClick={handleDateSubmit}
-            className="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition duration-200"
-          >
-            Submit
-          </button>
-        </Modal>
-      )}
-
-      {/* Method Creation Modal */}
+    
       <CreateMethodModal
         isOpen={isMethodModalOpen}
         onClose={() => setIsMethodModalOpen(false)}
         onSubmit={handleCreateMethod}
-        allAccounts={allAccounts}
+        allAccounts={allAccounts} // Pass the correct accounts
         newMethod={newMethod}
         setNewMethod={setNewMethod}
       />
