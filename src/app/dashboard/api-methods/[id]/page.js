@@ -318,6 +318,17 @@ const MethodDetails = () => {
        <div className="mt-6 bg-gray-800 border rounded-lg p-4 shadow-md max-h-[300px] overflow-y-auto">
          <h2 className="font-semibold text-lg mb-2">API Response</h2>
          <pre className="whitespace-pre-wrap text-sm text-gray-300">{JSON.stringify(apiResponse, null, 2)}</pre>
+         
+         {/* Display the count if it exists */}
+         {apiResponse.data && apiResponse.data.length > 0 ? (
+           <ul className="list-disc ml-6">
+             {apiResponse.data.map((item, index) => (
+               <li key={index}>{JSON.stringify(item)}</li> // Display each item in the data array
+             ))}
+           </ul>
+         ) : (
+           <p className="text-gray-500">No data available.</p>
+         )}
        </div>
      )}
 
