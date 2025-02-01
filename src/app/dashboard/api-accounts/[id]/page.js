@@ -394,7 +394,7 @@ const ApiAccountsPage = () => {
               <div 
                 key={api.id} 
                 className="method-item cursor-pointer border rounded-lg bg-gray-800 mb-4 p-2 h-24 flex flex-col justify-between"
-                onClick={() => router.push(`http://localhost:3000/dashboard/api-methods/${api.id}`)}
+                onClick={() => router.push(`/dashboard/api-methods/${api.id}`)}
               >
                 <h3 className="font-bold">{api.apiTitle}</h3>
                 <p className="text-sm">Main URL: {api.mainUrl}</p>
