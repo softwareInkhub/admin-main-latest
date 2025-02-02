@@ -19,7 +19,7 @@ const nextConfig = {
       "undici": false,  // Disable undici
     };
     return config;
-  },
+  },      
   async headers() {
     return [
       {
