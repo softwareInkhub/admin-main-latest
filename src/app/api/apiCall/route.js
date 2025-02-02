@@ -125,74 +125,10 @@ export async function POST(request) {
         const data = await response.json();
         console.log('API Response:', data);
 
-        // Dynamically handle different API responses
-        if (data.products) {
-          allData = [...allData, ...data.products]; // For Shopify products
-        } else if (data.items) {
-          allData = [...allData, ...data.items]; // For other APIs that return items
-        } else if (Array.isArray(data)) {
-          allData = [...allData, ...data]; // If the response is an array
-        } else if (data.shop) {
-          console.log('Shop data:', data.shop);
-          allData.push(data.shop); // Optionally, you can push the shop data to allData
-        } else if (data.message) {
-          console.log('Received message:', data.message);
-          allData.push(data.message); // Optionally, you can push the message to allData
-        } else if (data.orders && Array.isArray(data.orders)) {
-          let orders = data.orders; // Initialize orders with the current page's orders
-          let nextOrderPageInfo = data.nextPageInfo; // Assuming the API provides nextPageInfo for orders
+       
 
-          // Fetch all pages of orders if pagination is supported
-          while (nextOrderPageInfo) {
-            const orderFetchUrl = `${url}?page_info=${nextOrderPageInfo}`; // Construct the URL for the next page
-            const orderResponse = await fetch(orderFetchUrl, {
-              method: method,
-              headers: {
-                'Content-Type': 'application/json',
-                ...validHeaders,
-              },
-            });
-
-            if (!orderResponse.ok) {
-              const errorText = await orderResponse.text();
-              console.error('Error fetching orders:', errorText);
-              throw new Error(`HTTP error! status: ${orderResponse.status}, details: ${errorText}`);
-            }
-
-            const orderData = await orderResponse.json();
-            orders = [...orders, ...orderData.orders]; // Append new orders to the existing array
-            nextOrderPageInfo = orderData.nextPageInfo; // Update nextOrderPageInfo for the next iteration
-          }
-
-          // Ensure all orders are processed without limit
-          allData = [...allData, ...orders];
-        } else {
-          console.warn('Unexpected response format:', data);
-        }
-
-        // Extract next page info from the Link header
-        const linkHeader = response.headers.get('link'); // Get the Link header
-        console.log('Link Header:', linkHeader); // Log the Link header
-
-        if (linkHeader && linkHeader.includes('rel="next"')) {
-          const regex = /<([^>]+)>; rel="next"/;
-          const match = linkHeader.match(regex);
-          if (match && match[1]) {
-            const urlParams = new URLSearchParams(match[1].split("?")[1]);
-            nextPageInfo = urlParams.get("page_info");
-          } else {
-            nextPageInfo = null; // If no valid next page_info, set to null
-          }
-        } else {
-          nextPageInfo = null; // If no next link, set to null
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 3000)); // Wait for 3 seconds before the next request
-
-      // Continue until there are no more pages
-
-      console.log(`Total data fetched: ${allData.length}`);
-      return NextResponse.json({ data: allData }, { status: 200 });
+      console.log(`Total data fetched: ${data.length}`);
+      return NextResponse.json({ data: data }, { status: 200 });
     }
 
   } catch (error) {
